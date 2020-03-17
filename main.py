@@ -27,13 +27,13 @@ class Track(object):
         self.number = number
         self.offset = offset
         self.duration = duration
-    
+
     def duration_in_seconds(self):
         return self.duration // 75
-    
+
     def offset_in_seconds(self):
         return self.offset // 75
-    
+
     def __repr__(self):
         return "<Track: {}>".format(self.number)
 
@@ -45,12 +45,12 @@ def cddb_sum(n: int) -> int:
 
 def cddb_discid(tracks: [Track]):
     checksum = 0
-    
+
     for track in tracks:
         checksum += cddb_sum(track.duration_in_seconds())
-    
+
     total = tracks[-1].offset_in_seconds() + tracks[-1].duration_in_seconds() - tracks[0].offset_in_seconds()
-    
+
     return ((checksum % 0xff) << 24 | total << 8 | len(tracks))
 
 def cddb_disc_info(tracks):
@@ -65,9 +65,9 @@ def cddb_disc_info(tracks):
 def convert_disc(inputfiles):
     first = min(inputfiles, key=int)
     last = max(inputfiles, key=int)
-    
+
     print(first, last)
-    
+
     offset = 150
     tracks = []
 
@@ -90,7 +90,7 @@ def convert_disc(inputfiles):
 
     if query.status_code != 200:
         return print("Error")
-    
+
     query_lines = query.text.splitlines()
     query_status = int(query_lines[0].split(" ")[0])
     disc_category = ""
@@ -130,22 +130,22 @@ def convert_disc(inputfiles):
                 "name": dtitle,
                 "value": category
             })
-        
+
         answer = prompt(question)
-        
+
         disc_category = answer["match"]
-    
+
     if disc_category == "OTHER-NOT-LISTED" or query_status == 202:
         print("Could not find match in VGMDB CDDB.")
 
         question = {
             "type": "input",
             "name": "link",
-            "message": "Please paste VGMDB ID, or leave blank to cancel:" 
+            "message": "Please paste VGMDB ID, or leave blank to cancel:"
         }
-        
+
         answer = prompt(question)
-        
+
         vgmdb_link = answer["link"]
         disc_category = None
 
@@ -157,9 +157,9 @@ def convert_disc(inputfiles):
 
         if vgmdb.status_code != 200:
             return print("Error")
-        
+
         info = vgmdb.json()
-        
+
         album = info["names"]["en"]
         if " / " in album:
             artist, album = info["names"]["en"].split(" / ", 1)
@@ -182,14 +182,14 @@ def convert_disc(inputfiles):
 
         if art_image.status_code == 200:
             cover = art_image.content
-        
+
         if len(info["discs"]) > 1:
             disc_number = int(input("Disc number:")) - 1
             sdn = "y" in input("Save disc number?")
         else:
             disc_number = 0
             sdn = False
-        
+
         tracks = info["discs"][disc_number]["tracks"]
 
         for i, track in enumerate(range(first, last + 1)):
@@ -234,9 +234,9 @@ def convert_disc(inputfiles):
                 audio.tags[TAGS["cover"]] = (MP4Cover(cover, imageformat=MP4Cover.FORMAT_JPEG),)
 
             audio.save()
-    
+
     else:
-    
+
         read_cmd = "cddb read {} {}".format(disc_category, disc_id[0])
         read = requests.get(SERVER_URL, params={
             "cmd": read_cmd
@@ -244,7 +244,7 @@ def convert_disc(inputfiles):
 
         if query.status_code != 200:
             return print("Error")
-        
+
         read_lines = read.text.splitlines()
         read_status = int(read_lines[0].split(" ")[0])
 
@@ -286,7 +286,7 @@ def convert_disc(inputfiles):
                                     art_image = requests.get(info["picture_full"])
                             else:
                                 art_image = requests.get(results_json["picture_full"])
-                            
+
                             if art_image.status_code == 200:
                                 cover = art_image.content
                         except:
@@ -350,13 +350,13 @@ if __name__ == "__main__":
             print(os.path.basename)
             try:
                 name = os.path.basename(path)
-                number = int(name.split(" ")[0].replace(".", ""))
+                number = int(name.replace(".", " ").replace("-", " ").split(" ")[0])
                 inputfiles[number] = path
             except:
                 pass
-        
+
         print(inputfiles)
-        
+
         convert_disc(inputfiles)
 
     label = ttk.Label(ui, text="VGMdb Converter")
